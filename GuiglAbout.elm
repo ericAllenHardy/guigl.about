@@ -2,10 +2,10 @@ module GuiglAbout exposing (
   Guigl, Msg, update, init, view
   )  
 
-import Html exposing (Html, div, button, text, img)
+import Html exposing (Html, h1, div, button, text, img)
 import Html.App as App
 import Html.Events exposing (onMouseEnter, onMouseLeave)
-import Html.Attributes exposing (style, src, alt, height, width)
+import Html.Attributes exposing (style, title, src, alt, height, width, align)
 import Time exposing (Time)
 import AnimationFrame exposing (diffs)
 
@@ -49,29 +49,33 @@ rotationRate : Int
 rotationRate = 20
 
 maxRadius : Int 
-maxRadius = 100
+maxRadius = 70
 minRadius : Int
 minRadius = 50
 
-guigl = 
-  init "guigl" "/models/guigl.png" "our protagonist" updateGuigl
-
-updateGuigl : Transform -> Time -> Transform
-updateGuigl tf dt =
-  let rotationRate = (*) 15 -- 0.1
-  in {tf | rotation = tf.rotation + rotationRate dt }
-  
 baseTransform : Transform
 baseTransform = 
   Transform minRadius 0
 
--- FUNCTIONS --
 
+guigl = 
+  init "guigl" "/models/guigl.png" 
+       "our brave protagonist" 
+       updateGuigl
 
+updateGuigl : Transform -> Time -> Transform
+updateGuigl tf dt =
+  let rotationRate = (*) 15 -- 0.1 is a sane amount
+  in {tf | rotation = tf.rotation + rotationRate dt } --beware overflow
+  
+
+-- INIT --
 init : Name -> ImagePath -> String -> (Transform -> Time -> Transform) -> Guigl
 init n p d uf = 
   Guigl n p d baseTransform Inactive uf
 
+
+-- UPDATE --
 update' : Msg -> Guigl -> (Guigl, Cmd Msg)
 update' msg guigl =
   (update msg guigl, Cmd.none)
@@ -99,30 +103,48 @@ update msg guigl =
           | tf = guigl.updater guigl.tf dt
           }
 
+
+-- SUBSCRIPTIONS -- 
 subscriptions : Guigl -> Sub Msg
 subscriptions g = 
   diffs Tick
 
+
+-- VIEW --
 (=>) = (,)
+
+px : Int -> String
+px n = 
+  toString n ++ "px"
 
 view : Guigl -> Html Msg
 view guigl =
-  div []
-    [ div [] [ text guigl.name ]
+  let guiglWidth = round <| 2.4 * toFloat guigl.tf.radius
+      guiglHeight = 2 * guigl.tf.radius
+  in 
+  div [ style [ "width" => (px << round <| 1.2 * toFloat guiglWidth)
+              , "position" => "relative"
+              , "left" => px 5
+              ] 
+      ]
+    [ h1 [ {-align "left"-} ] [ text guigl.name ]
+    -- , div [] [ text guigl.desc ]
     , img [ src guigl.icon
           , alt guigl.name
-          , height (2 * guigl.tf.radius)
-          , width (round (2.4 * toFloat guigl.tf.radius))
-          --, rotate (guigl.rotation |> toString) ++"deg"
+          , title guigl.desc
+          , height guiglHeight 
+          , width guiglWidth 
           , style (let rot = "rotate(" ++ toString guigl.tf.rotation ++ "deg)"
                    in [ "-webkit-transform" => rot  -- Safari
                       , "-moz-transform" => rot -- Firefox 3.6 Firefox 4 */
                       , "-ms-transform" => rot -- IE9 
                       , "-o-transform" => rot -- Opera 
                       , "transform" => rot -- W3
+                     -- , "position" => "relative"
+                     -- , "left" => px 10
                       ])
+          , align "center"
           , onMouseEnter Activate
           , onMouseLeave Deactivate
           ] []
-    , div [] [ text guigl.desc ]
     ]
