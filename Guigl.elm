@@ -1,5 +1,7 @@
-module GuiglAbout exposing (
-  Guigl, Msg, update, init, view
+module Guigl exposing (
+    Transform, Name, ImagePath
+  , Guigl, Msg, update, init, view, subscriptions
+  , guigl
   )  
 
 import Html exposing (Html, h1, div, button, text, img)
@@ -24,6 +26,9 @@ type alias ImagePath = String
 type alias Transform =
   { radius : Int
   , rotation : Float
+  , xOffset : Int
+  , yOffset : Int
+  , timeUp : Float
   }
 
 type Activeness
@@ -55,8 +60,7 @@ minRadius = 50
 
 baseTransform : Transform
 baseTransform = 
-  Transform minRadius 0
-
+  Transform minRadius 0 0 0 0.0
 
 guigl = 
   init "guigl" "/models/guigl.png" 
@@ -105,9 +109,9 @@ update msg guigl =
 
 
 -- SUBSCRIPTIONS -- 
-subscriptions : Guigl -> Sub Msg
-subscriptions g = 
-  diffs Tick
+subscriptions : a -> Sub Msg
+subscriptions = 
+  always <| diffs Tick
 
 
 -- VIEW --
@@ -121,14 +125,20 @@ view : Guigl -> Html Msg
 view guigl =
   let guiglWidth = round <| 2.4 * toFloat guigl.tf.radius
       guiglHeight = 2 * guigl.tf.radius
+      boxWidth = round <| 1.7 * toFloat guiglWidth
   in 
-  div [ style [ "width" => (px << round <| 1.2 * toFloat guiglWidth)
+  div [ style [ "width" => (px boxWidth )
               , "position" => "relative"
               , "left" => px 5
               ] 
       ]
-    [ h1 [ {-align "left"-} ] [ text guigl.name ]
-    -- , div [] [ text guigl.desc ]
+    [ h1 [ {-style [ "position" => "relative" 
+                 , "left" => px 15
+                 ] 
+           -}
+           align "center"
+         ] 
+       [ text guigl.name ]
     , img [ src guigl.icon
           , alt guigl.name
           , title guigl.desc
@@ -140,8 +150,10 @@ view guigl =
                       , "-ms-transform" => rot -- IE9 
                       , "-o-transform" => rot -- Opera 
                       , "transform" => rot -- W3
-                     -- , "position" => "relative"
-                     -- , "left" => px 10
+                      , "position" => "relative"
+                      , "left" => (px <| guigl.tf.xOffset 
+                                         + round (toFloat boxWidth / 4.0))
+                      , "top" => px guigl.tf.yOffset
                       ])
           , align "center"
           , onMouseEnter Activate
